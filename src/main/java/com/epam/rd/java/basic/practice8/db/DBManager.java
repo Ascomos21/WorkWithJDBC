@@ -69,13 +69,13 @@ public class DBManager {
     }
 
     public Connection getConnection(String connectionUrl) throws SQLException {
-        try {
+        /*try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Success.
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             // Fail.
-        }
+        }*/
         Connection conn = null;
 
         try {

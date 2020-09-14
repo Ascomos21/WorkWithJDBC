@@ -64,8 +64,9 @@ public class Demo {
 
         dbManager.setTeamsForUser(userIvanov, teamA);
         dbManager.setTeamsForUser(userPetrov, teamA, teamB);
+
         dbManager.setTeamsForUser(userObama, teamA, teamB, teamC);
-/*
+
         for (User user : dbManager.findAllUsers()) {
 
             printList(dbManager.getUserTeams(user));
@@ -90,13 +91,13 @@ public class Demo {
 
         // Part 5
 
-        teamC.setName("teamX");
+       /* teamC.setName("teamX");
 
                 dbManager.updateTeam(teamC);
 
-        printList(dbManager.findAllTeams());
+        printList(dbManager.findAllTeams());*/
 
-        // teams ==> [teamB, teamX]*/
+        // teams ==> [teamB, teamX]
 
     }
 }

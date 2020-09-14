@@ -14,6 +14,18 @@ public class User {
         this.login = login;
     }
 
+    public void setLogin(String login) {
+        this.login = login;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public User(int id, String login) {
         this.id = id;
         this.login = login;
@@ -39,7 +51,7 @@ public class User {
     @Override
     public String toString() {
         return
-               login ;
+                login;
 
     }
 }

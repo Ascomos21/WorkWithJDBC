@@ -24,6 +24,34 @@ public class DBManager {
         return dbManager;
     }
 
+    public Connection getConnection(String connectionUrl) throws SQLException {
+        Connection conn = null;
+
+        try {
+            conn = DriverManager.getConnection(connectionUrl);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return conn;
+    }
+
+    public String getUrlFromProperties() {
+        String out = null;
+        try (InputStream input = new FileInputStream("app.properties")) {
+
+            Properties prop = new Properties();
+
+            // load a properties file
+            prop.load(input);
+
+            // get the property value and print it out
+            out = prop.getProperty("myConnection.url");
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return out;
+    }
 
     public User getUser(String login) {
         int id = 0;
@@ -46,9 +74,10 @@ public class DBManager {
         ResultSet resultSet = null;
         int id = 0;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            resultSet = statement.executeQuery("SELECT * FROM users " +
+            resultSet = statement.executeQuery("SELECT * FROM teams " +
                     "WHERE name = '" + name + "'");
-            id = resultSet.getInt(1);
+            if (resultSet.next())
+                id = resultSet.getInt(1);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
@@ -57,25 +86,50 @@ public class DBManager {
         return new Team(id, name);
     }
 
+    public List<Team> getUserTeams(User user) {
+        List<Team> teamList = new ArrayList<>();
+        ResultSet resultSet = null;
+        ResultSet resultForTeams = null;
+        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement();
+             Statement statement1 = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
+            resultSet = statement.executeQuery("SELECT * FROM users_teams where team_id =" + user.getId());
+            while (resultSet.next()) {
+                resultForTeams = statement1.executeQuery("SELECT  * FROM teams where id =" + resultSet.getInt(2));
+                while (resultForTeams.next()) {
+                    teamList.add(new Team(resultForTeams.getInt(1), resultForTeams.getString(2)));
+                }
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            closeResultSet(resultSet);
+            closeResultSet(resultForTeams);
+        }
+        return teamList;
+
+    }
+
     public void setTeamsForUser(User user, Team... teams) {
         Connection connection;
         PreparedStatement preparedStatement = null;
         try {
             connection = dbManager.getConnection(getUrlFromProperties());
-            preparedStatement = connection.prepareStatement("INSERT INTO users_teams VALUES (?,?)");
             connection.setAutoCommit(false);
+            preparedStatement = connection.prepareStatement("INSERT INTO users_teams VALUES (?,?)");
             for (Team team : teams) {
-                preparedStatement.setString(1, user.getLogin());
-                preparedStatement.setString(2, team.getName());
+               // System.out.println("USER ID==>" + user.getId());
+               // System.out.println("Team Id==>" + team.getId());
+                preparedStatement.setInt(1, user.getId());
+                preparedStatement.setInt(2, team.getId());
                 preparedStatement.execute();
             }
             connection.commit();
-            connection.setAutoCommit(true);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
             try {
-                preparedStatement.close();
+                if (preparedStatement != null)
+                    preparedStatement.close();
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
             }
@@ -133,23 +187,24 @@ public class DBManager {
         return userList;
     }
 
-    public String getUrlFromProperties() {
-        String out = null;
-        try (InputStream input = new FileInputStream("app.properties")) {
-
-            Properties prop = new Properties();
-
-            // load a properties file
-            prop.load(input);
-
-            // get the property value and print it out
-            out = prop.getProperty("connection.url");
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
+    public void deleteTeam(Team team) {
+        PreparedStatement statement = null;
+        try (Connection conn = DriverManager.getConnection(getUrlFromProperties())) {
+            statement = conn.prepareStatement("delete from users_teams where team_id= ?");
+            statement.setInt(1, team.getId());
+            statement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            try {
+                if (statement != null)
+                    statement.close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
         }
-        return out;
     }
+
 
     private void closeResultSet(ResultSet resultSet) {
         try {
@@ -160,15 +215,5 @@ public class DBManager {
         }
     }
 
-    public Connection getConnection(String connectionUrl) throws SQLException {
-        Connection conn = null;
-
-        try {
-            conn = DriverManager.getConnection(connectionUrl);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        return conn;
-    }
 
 }

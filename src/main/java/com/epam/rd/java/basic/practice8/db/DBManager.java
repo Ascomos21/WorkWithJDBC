@@ -45,7 +45,7 @@ public class DBManager {
             prop.load(input);
 
             // get the property value and print it out
-            out = prop.getProperty("myConnection.url");
+            out = prop.getProperty("connection.url");
 
         } catch (IOException ex) {
             ex.printStackTrace();

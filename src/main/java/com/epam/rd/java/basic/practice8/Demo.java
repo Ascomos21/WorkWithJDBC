@@ -49,7 +49,6 @@ public class Demo {
         // Part 3
 
         User userPetrov = dbManager.getUser("petrov");
-
         User userIvanov = dbManager.getUser("ivanov");
 
         User userObama = dbManager.getUser("obama");
@@ -91,11 +90,11 @@ public class Demo {
 
         // Part 5
 
-       /* teamC.setName("teamX");
+        teamC.setName("teamX");
 
                 dbManager.updateTeam(teamC);
 
-        printList(dbManager.findAllTeams());*/
+        printList(dbManager.findAllTeams());
 
         // teams ==> [teamB, teamX]
 

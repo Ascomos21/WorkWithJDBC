@@ -88,13 +88,14 @@ public class DBManager {
 
     public List<Team> getUserTeams(User user) {
         List<Team> teamList = new ArrayList<>();
-        ResultSet resultSet = null;
+        ResultSet selectIdTeams = null;
         ResultSet resultForTeams = null;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement();
              Statement statement1 = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            resultSet = statement.executeQuery("SELECT * FROM users_teams where team_id =" + user.getId());
-            while (resultSet.next()) {
-                resultForTeams = statement1.executeQuery("SELECT  * FROM teams where id =" + resultSet.getInt(2));
+            selectIdTeams = statement.executeQuery("SELECT * FROM users_teams where user_id = " + user.getId());
+            while (selectIdTeams.next()) {
+
+                resultForTeams = statement1.executeQuery("SELECT  * FROM teams where id =" + selectIdTeams.getInt(2));
                 while (resultForTeams.next()) {
                     teamList.add(new Team(resultForTeams.getInt(1), resultForTeams.getString(2)));
                 }
@@ -102,7 +103,7 @@ public class DBManager {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
-            closeResultSet(resultSet);
+            closeResultSet(selectIdTeams);
             closeResultSet(resultForTeams);
         }
         return teamList;
@@ -110,23 +111,34 @@ public class DBManager {
     }
 
     public void setTeamsForUser(User user, Team... teams) {
-        Connection connection;
+        Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
             connection = dbManager.getConnection(getUrlFromProperties());
             connection.setAutoCommit(false);
             preparedStatement = connection.prepareStatement("INSERT INTO users_teams VALUES (?,?)");
             for (Team team : teams) {
-               // System.out.println("USER ID==>" + user.getId());
-               // System.out.println("Team Id==>" + team.getId());
                 preparedStatement.setInt(1, user.getId());
                 preparedStatement.setInt(2, team.getId());
                 preparedStatement.execute();
             }
             connection.commit();
         } catch (SQLException throwables) {
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             throwables.printStackTrace();
         } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+            }
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
@@ -155,11 +167,13 @@ public class DBManager {
     public List<User> findAllUsers() {
         List<User> userList = new ArrayList<>();
         ResultSet resultSet = null;
+        int id;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
             resultSet = statement.executeQuery("SELECT * FROM users");
             while (resultSet.next()) {
+                id = resultSet.getInt(1);
                 String login = resultSet.getString(2);
-                userList.add(new User(login));
+                userList.add(new User(id, login));
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -172,11 +186,14 @@ public class DBManager {
     public List<Team> findAllTeams() {
         List<Team> userList = new ArrayList<>();
         ResultSet resultSet = null;
+        int id;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
             resultSet = statement.executeQuery("SELECT * FROM teams");
             while (resultSet.next()) {
+                id = resultSet.getInt(1);
+
                 String name = resultSet.getString(2);
-                userList.add(new Team(name));
+                userList.add(new Team(id, name));
             }
 
         } catch (SQLException throwables) {
@@ -189,10 +206,14 @@ public class DBManager {
 
     public void deleteTeam(Team team) {
         PreparedStatement statement = null;
+        PreparedStatement statementForDeleteFromTeam = null;
         try (Connection conn = DriverManager.getConnection(getUrlFromProperties())) {
             statement = conn.prepareStatement("delete from users_teams where team_id= ?");
             statement.setInt(1, team.getId());
             statement.executeUpdate();
+            statementForDeleteFromTeam = conn.prepareStatement("delete from teams where id= ?");
+            statementForDeleteFromTeam.setInt(1, team.getId());
+            statementForDeleteFromTeam.executeUpdate();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
@@ -205,6 +226,25 @@ public class DBManager {
         }
     }
 
+    public void updateTeam(Team team) {
+        PreparedStatement statement = null;
+        try (Connection connection = DriverManager.getConnection(getUrlFromProperties())) {
+            statement = connection.prepareStatement("update teams SET name= ? WHERE id = ?");
+            statement.setString(1, team.getName());
+            statement.setInt(2, team.getId());
+            statement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            try {
+                if (statement != null)
+                    statement.close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        }
+
+    }
 
     private void closeResultSet(ResultSet resultSet) {
         try {

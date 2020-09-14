@@ -10,9 +10,6 @@ public class User {
         return login;
     }
 
-    public User(String login) {
-        this.login = login;
-    }
 
     public void setLogin(String login) {
         this.login = login;
@@ -24,6 +21,14 @@ public class User {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public User() {
+
+    }
+
+    public User(String login) {
+        this.login = login;
     }
 
     public User(int id, String login) {

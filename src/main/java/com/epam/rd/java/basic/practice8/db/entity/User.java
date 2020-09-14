@@ -20,8 +20,7 @@ public class User {
     }
 
     public static User createUser(String name) {
-        User user = new User(name);
-        return user;
+        return new User(name);
     }
 
     @Override

@@ -3,11 +3,24 @@ package com.epam.rd.java.basic.practice8.db.entity;
 import java.util.Objects;
 
 public class Team {
-
+    int id;
     String name;
 
     public String getName() {
         return name;
+    }
+
+    public Team(String name) {
+        this.name = name;
+    }
+
+    public Team(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public static Team createTeam(String name) {
+        return new Team(name);
     }
 
     @Override
@@ -25,8 +38,6 @@ public class Team {
 
     @Override
     public String toString() {
-        return "Team{" +
-                "name='" + name + '\'' +
-                '}';
+        return name;
     }
 }

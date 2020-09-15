@@ -50,7 +50,7 @@ public class DBManager {
             prop.load(input);
 
             // get the property value and print it out
-            out = prop.getProperty("connection.url");
+            out = prop.getProperty("myConnection.url");
 
         } catch (IOException ex) {
             logger.log(Level.WARNING, ex.getMessage());
@@ -73,7 +73,7 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            if (preparedStatement!=null){
+            if (preparedStatement != null) {
                 try {
                     preparedStatement.close();
                 } catch (SQLException throwables) {
@@ -88,9 +88,10 @@ public class DBManager {
     public Team getTeam(String name) {
         ResultSet resultSet = null;
         int id = 0;
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            resultSet = statement.executeQuery("SELECT * FROM teams " +
-                    "WHERE name = '" + name + "'");
+        try (PreparedStatement statement = dbManager.getConnection(getUrlFromProperties()).prepareStatement("SELECT * FROM teams " +
+                "WHERE name = ?")) {
+            statement.setString(1, name);
+            resultSet = statement.executeQuery();
             if (resultSet.next())
                 id = resultSet.getInt(1);
         } catch (SQLException throwables) {
@@ -183,11 +184,32 @@ public class DBManager {
 
     public boolean insertTeam(Team team) {
         boolean flag = false;
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            statement.executeUpdate("INSERT INTO  teams (name) VALUES ('" + team.getName() + "')", RETURN_GENERATED_KEYS);
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        int id = 0;
+        try (Statement selectId  = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
+
+            resultSet = selectId.executeQuery("SELECT  max(id) FROM teams");
+            if (resultSet.next()) {
+                id = resultSet.getInt(1) + 1;
+            }
+            preparedStatement = dbManager.getConnection(getUrlFromProperties()).prepareStatement("INSERT INTO  teams (id, name) VALUES (?,?)");
+            preparedStatement.setInt(1, id);
+            preparedStatement.setString(2, team.getName());
+            preparedStatement.executeUpdate();
             flag = true;
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
+        } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException throwables) {
+                    logger.log(Level.WARNING, throwables.getMessage());
+                }
+            }
+            closeResultSet(resultSet);
+
         }
         return flag;
     }

@@ -1,11 +1,16 @@
 package com.epam.rd.java.basic.practice8;
 
 import com.epam.rd.java.basic.practice8.db.DBManager;
+import com.epam.rd.java.basic.practice8.db.entity.Team;
 import com.epam.rd.java.basic.practice8.db.entity.User;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 public class Part1StudentTest {
+    private static final PrintStream STREAM_OUT = System.out;
 
     @Test
     public void testWithEmptyTable() {
@@ -38,6 +43,38 @@ public class Part1StudentTest {
         Assert.assertEquals(63564946, user.hashCode());
         Assert.assertEquals("Asoka", user.toString());
         Assert.assertNotEquals(null, user);
+    }
+
+    @Test
+    public void testDemoMain() {
+        DBManager dbManager = DBManager.getInstance();
+
+        dbManager.clearTable("teams");
+        dbManager.clearTable("users_teams");
+        dbManager.clearTable("users");
+        dbManager.insertUser(User.createUser("ivanov"));
+        dbManager.insertTeam(Team.createTeam("teamA"));
+        String expectedString = "[ivanov, obama, petrov]" + System.lineSeparator() +
+                " ===========================" + System.lineSeparator() +
+                "[teamA, teamB, teamC]" + System.lineSeparator() +
+                " ===========================" + System.lineSeparator() +
+                "[teamA]" + System.lineSeparator() +
+                "~~~~~" + System.lineSeparator() +
+                "[teamA, teamB, teamC]" + System.lineSeparator() +
+                "~~~~~" + System.lineSeparator() +
+                "[teamA, teamB]" + System.lineSeparator() +
+                "~~~~~" + System.lineSeparator() +
+                "===========================" + System.lineSeparator() +
+                "[teamB, teamX]" + System.lineSeparator();
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(outputStream);
+        System.setOut(printStream);
+        Demo.main(new String[]{});
+        String result = outputStream.toString();
+        System.setOut(STREAM_OUT);
+        System.out.println(result.equals(expectedString));
+        Assert.assertEquals(expectedString, result);
     }
 
 

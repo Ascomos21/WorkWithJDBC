@@ -28,14 +28,7 @@ public class DBManager {
     }
 
     public Connection getConnection(String connectionUrl) throws SQLException {
-        Connection conn = null;
-
-        try {
-            conn = DriverManager.getConnection(connectionUrl);
-        } catch (SQLException throwables) {
-            logger.log(Level.WARNING, throwables.getMessage());
-        }
-        return conn;
+        return DriverManager.getConnection(connectionUrl);
     }
 
     public String getUrlFromProperties() {
@@ -48,7 +41,7 @@ public class DBManager {
             prop.load(input);
 
             // get the property value and print it out
-            out = prop.getProperty("myConnection.url");
+            out = prop.getProperty("connection.url");
 
         } catch (IOException ex) {
             logger.log(Level.WARNING, ex.getMessage());

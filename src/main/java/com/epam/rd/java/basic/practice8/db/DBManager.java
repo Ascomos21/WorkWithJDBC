@@ -10,8 +10,11 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DBManager {
+    private static final Logger logger = Logger.getLogger(DBManager.class.getName());
     private static DBManager dbManager;
 
 
@@ -30,7 +33,7 @@ public class DBManager {
         try {
             conn = DriverManager.getConnection(connectionUrl);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         }
         return conn;
     }
@@ -48,7 +51,7 @@ public class DBManager {
             out = prop.getProperty("connection.url");
 
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.log(Level.WARNING, ex.getMessage());
         }
         return out;
     }
@@ -63,7 +66,7 @@ public class DBManager {
                 id = resultSet.getInt(1);
             }
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             closeResultSet(resultSet);
         }
@@ -79,7 +82,7 @@ public class DBManager {
             if (resultSet.next())
                 id = resultSet.getInt(1);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             closeResultSet(resultSet);
         }
@@ -89,22 +92,15 @@ public class DBManager {
     public List<Team> getUserTeams(User user) {
         List<Team> teamList = new ArrayList<>();
         ResultSet selectIdTeams = null;
-        ResultSet resultForTeams = null;
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement();
-             Statement statement1 = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            selectIdTeams = statement.executeQuery("SELECT * FROM users_teams where user_id = " + user.getId());
+        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
+            selectIdTeams = statement.executeQuery("SELECT * FROM users_teams inner join teams on team_id = id where user_id = " + user.getId());
             while (selectIdTeams.next()) {
-
-                resultForTeams = statement1.executeQuery("SELECT  * FROM teams where id =" + selectIdTeams.getInt(2));
-                while (resultForTeams.next()) {
-                    teamList.add(new Team(resultForTeams.getInt(1), resultForTeams.getString(2)));
-                }
+                teamList.add(new Team(selectIdTeams.getInt("team_id"), selectIdTeams.getString("name")));
             }
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             closeResultSet(selectIdTeams);
-            closeResultSet(resultForTeams);
         }
         return teamList;
 
@@ -125,43 +121,53 @@ public class DBManager {
             connection.commit();
         } catch (SQLException throwables) {
             try {
-                connection.rollback();
+                if (connection != null)
+                    connection.rollback();
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.log(Level.WARNING, e.getMessage());
             }
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             if (connection != null) {
                 try {
                     connection.setAutoCommit(true);
                     connection.close();
                 } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                    logger.log(Level.WARNING, throwables.getMessage());
                 }
             }
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
             } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                logger.log(Level.WARNING, throwables.getMessage());
             }
         }
     }
 
-    public void insertUser(User user) {
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            statement.executeUpdate("INSERT INTO users (login) VALUES ('" + user.getLogin() + "')");
+    public boolean insertUser(User user) {
+        boolean flag = false;
+        try (Connection connection = dbManager.getConnection(getUrlFromProperties());
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)");) {
+
+            statement.setString(1, user.getLogin());
+            statement.executeUpdate();
+            flag = true;
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         }
+        return flag;
     }
 
-    public void insertTeam(Team team) {
+    public boolean insertTeam(Team team) {
+        boolean flag = false;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
             statement.executeUpdate("INSERT INTO  teams (name) VALUES ('" + team.getName() + "')");
+            flag = true;
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         }
+        return flag;
     }
 
     public List<User> findAllUsers() {
@@ -176,7 +182,7 @@ public class DBManager {
                 userList.add(new User(id, login));
             }
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             closeResultSet(resultSet);
         }
@@ -197,7 +203,7 @@ public class DBManager {
             }
 
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             closeResultSet(resultSet);
         }
@@ -215,13 +221,19 @@ public class DBManager {
             statementForDeleteFromTeam.setInt(1, team.getId());
             statementForDeleteFromTeam.executeUpdate();
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
+            try {
+                if (statementForDeleteFromTeam != null)
+                    statementForDeleteFromTeam.close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
             try {
                 if (statement != null)
                     statement.close();
             } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                logger.log(Level.WARNING, throwables.getMessage());
             }
         }
     }
@@ -234,13 +246,13 @@ public class DBManager {
             statement.setInt(2, team.getId());
             statement.executeUpdate();
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         } finally {
             try {
                 if (statement != null)
                     statement.close();
             } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                logger.log(Level.WARNING, throwables.getMessage());
             }
         }
 
@@ -251,7 +263,7 @@ public class DBManager {
             if (resultSet != null)
                 resultSet.close();
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.log(Level.WARNING, throwables.getMessage());
         }
     }
 

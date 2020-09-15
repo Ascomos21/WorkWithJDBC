@@ -71,14 +71,13 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException throwables) {
-                    logger.log(Level.WARNING, throwables.getMessage());
-                }
+            try {
+                if (resultSet != null)
+                    resultSet.close();
+            } catch (SQLException throwables) {
+                logger.log(Level.WARNING, throwables.getMessage());
             }
-            closeResultSet(resultSet);
+            closePrepareStatement(preparedStatement);
         }
         return new User(id, login);
     }
@@ -114,14 +113,14 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException throwables) {
-                    logger.log(Level.WARNING, throwables.getMessage());
-                }
+            try {
+                if (selectIdTeams != null)
+                    selectIdTeams.close();
+            } catch (SQLException throwables) {
+                logger.log(Level.WARNING, throwables.getMessage());
             }
-            closeResultSet(selectIdTeams);
+
+            closePrepareStatement(preparedStatement);
         }
         return teamList;
 
@@ -157,12 +156,7 @@ public class DBManager {
                     logger.log(Level.WARNING, throwables.getMessage());
                 }
             }
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException throwables) {
-                logger.log(Level.WARNING, throwables.getMessage());
-            }
+            closePrepareStatement(preparedStatement);
         }
     }
 
@@ -177,6 +171,8 @@ public class DBManager {
             if (resultSet.next()) {
                 id = resultSet.getInt(1) + 1;
             }
+            user.setId(id);
+
             statement.setInt(1, id);
             statement.setString(2, user.getLogin());
             statement.executeUpdate();
@@ -208,14 +204,14 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException throwables) {
-                    logger.log(Level.WARNING, throwables.getMessage());
-                }
+            try {
+                if (resultSet != null)
+                    resultSet.close();
+            } catch (SQLException throwables) {
+                logger.log(Level.WARNING, throwables.getMessage());
             }
-            closeResultSet(resultSet);
+            closePrepareStatement(preparedStatement);
+
 
         }
         return flag;
@@ -263,10 +259,9 @@ public class DBManager {
 
     public boolean deleteTeam(Team team) {
         boolean flag = false;
-        PreparedStatement statement = null;
         PreparedStatement statementForDeleteFromTeam = null;
-        try (Connection conn = DriverManager.getConnection(getUrlFromProperties())) {
-            statement = conn.prepareStatement("delete from users_teams where team_id= ?");
+        try (Connection conn = DriverManager.getConnection(getUrlFromProperties());
+             PreparedStatement statement = conn.prepareStatement("delete from users_teams where team_id= ?");) {
             statement.setInt(1, team.getId());
             statement.executeUpdate();
             statementForDeleteFromTeam = conn.prepareStatement("delete from teams where id= ?");
@@ -276,21 +271,11 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            try {
-                if (statementForDeleteFromTeam != null)
-                    statementForDeleteFromTeam.close();
-            } catch (SQLException throwables) {
-                logger.log(Level.WARNING, throwables.getMessage());
-            }
-            try {
-                if (statement != null)
-                    statement.close();
-            } catch (SQLException throwables) {
-                logger.log(Level.WARNING, throwables.getMessage());
-            }
+            closePrepareStatement(statementForDeleteFromTeam);
         }
         return flag;
     }
+
 
     public boolean updateTeam(Team team) {
         boolean flag = false;
@@ -304,21 +289,34 @@ public class DBManager {
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
-            try {
-                if (statement != null)
-                    statement.close();
-            } catch (SQLException throwables) {
-                logger.log(Level.WARNING, throwables.getMessage());
-            }
+            closePrepareStatement(statement);
         }
         return flag;
 
+    }
+
+    public void clearTable(String nameTable) {
+        try (Connection connection = DriverManager.getConnection(getUrlFromProperties());
+             Statement statement = connection.createStatement();) {
+            statement.executeUpdate("truncate  table " + nameTable);
+        } catch (SQLException throwables) {
+            logger.log(Level.WARNING, throwables.getMessage());
+        }
     }
 
     private void closeResultSet(ResultSet resultSet) {
         try {
             if (resultSet != null)
                 resultSet.close();
+        } catch (SQLException throwables) {
+            logger.log(Level.WARNING, throwables.getMessage());
+        }
+    }
+
+    private void closePrepareStatement(PreparedStatement preparedStatement) {
+        try {
+            if (preparedStatement != null)
+                preparedStatement.close();
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         }

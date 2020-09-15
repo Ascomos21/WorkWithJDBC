@@ -8,6 +8,17 @@ import org.junit.Test;
 public class Part1StudentTest {
 
     @Test
+    public void testWithEmptyTable() {
+        DBManager dbManager = DBManager.getInstance();
+        dbManager.clearTable("users");
+        System.out.println(dbManager.findAllUsers().toString());
+        dbManager.insertUser(User.createUser("obama"));
+        dbManager.insertUser(User.createUser("petrov"));
+        String expectedResult = "[obama, petrov]";
+        Assert.assertEquals(expectedResult, dbManager.findAllUsers().toString());
+    }
+
+    @Test
     public void testInsertTest() {
         DBManager dbManager = DBManager.getInstance();
         Assert.assertTrue(dbManager.insertUser(User.createUser("Skauoker")));

@@ -48,7 +48,7 @@ public class DBManager {
             prop.load(input);
 
             // get the property value and print it out
-            out = prop.getProperty("connection.url");
+            out = prop.getProperty("myConnection.url");
 
         } catch (IOException ex) {
             logger.log(Level.WARNING, ex.getMessage());
@@ -296,12 +296,16 @@ public class DBManager {
     }
 
     public void clearTable(String nameTable) {
-        String sql = "truncate table " + nameTable;
+        String sql = null;
+        if (nameTable.equals("users"))
+            sql = "truncate users ";
+        if (nameTable.equals("teams"))
+            sql = "truncate teams ";
+        if (nameTable.equals("users_teams"))
+            sql = "truncate users_teams ";
         try (Connection connection = DriverManager.getConnection(getUrlFromProperties());
-             PreparedStatement statement = connection.prepareStatement(sql);
-        ) {
-
-            statement.execute(sql);
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.executeUpdate();
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         }

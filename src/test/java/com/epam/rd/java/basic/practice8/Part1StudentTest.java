@@ -24,8 +24,9 @@ public class Part1StudentTest {
         User user = new User();
         user.setId(1);
         user.setLogin("Asoka");
-        if (user.equals("Asoka"))
-            Assert.assertEquals("Asoka", user.toString());
+        Assert.assertEquals(63564946, user.hashCode());
+        Assert.assertEquals("Asoka", user.toString());
+        Assert.assertNotEquals(null, user);
     }
 
 

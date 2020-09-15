@@ -14,9 +14,20 @@ public class Part2StudentTest {
     }
 
     @Test
-    public void testCreateTeam(){
+    public void testCreateTeam() {
         User someUser = User.createUser("teamA");
         Assert.assertEquals("teamA", someUser.getLogin());
+    }
+
+    @Test
+    public void testTeam() {
+        Team team = new Team();
+        team.setId(1);
+        team.setName("team1");
+        System.out.println(team.hashCode());
+        Assert.assertEquals(110234003, team.hashCode());
+        Assert.assertEquals("team1", team.toString());
+        Assert.assertNotEquals(null, team);
     }
 
 }

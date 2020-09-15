@@ -168,14 +168,23 @@ public class DBManager {
 
     public boolean insertUser(User user) {
         boolean flag = false;
+        ResultSet resultSet = null;
+        int id = 0;
         try (Connection connection = dbManager.getConnection(getUrlFromProperties());
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)", Statement.RETURN_GENERATED_KEYS);) {
-
-            statement.setString(1, user.getLogin());
+             Statement selectId = dbManager.getConnection(getUrlFromProperties()).createStatement();
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (id, login) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS)) {
+            resultSet = selectId.executeQuery("SELECT  max(id) FROM users");
+            if (resultSet.next()) {
+                id = resultSet.getInt(1) + 1;
+            }
+            statement.setInt(1, id);
+            statement.setString(2, user.getLogin());
             statement.executeUpdate();
             flag = true;
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
+        } finally {
+            closeResultSet(resultSet);
         }
         return flag;
     }
@@ -186,7 +195,6 @@ public class DBManager {
         ResultSet resultSet = null;
         int id = 0;
         try (Statement selectId = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-
             resultSet = selectId.executeQuery("SELECT  max(id) FROM teams");
             if (resultSet.next()) {
                 id = resultSet.getInt(1) + 1;

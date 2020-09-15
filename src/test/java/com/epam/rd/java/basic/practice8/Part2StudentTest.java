@@ -7,6 +7,17 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class Part2StudentTest {
+
+    @Test
+    public void testWithEmptyTable() {
+        DBManager dbManager = DBManager.getInstance();
+        dbManager.clearTable("teams");
+        dbManager.insertTeam(Team.createTeam("team1"));
+        dbManager.insertTeam(Team.createTeam("team2"));
+        String expectedResult = "[team1, team2]";
+        Assert.assertEquals(expectedResult, dbManager.findAllTeams().toString());
+    }
+
     @Test
     public void testInsertTeam() {
         DBManager dbManager = DBManager.getInstance();

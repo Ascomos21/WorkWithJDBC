@@ -15,16 +15,28 @@ public class Part3StudentTest {
     @Test
     public void testGet() {
         DBManager dbManager = DBManager.getInstance();
-        User someUser = dbManager.getUser("ivanov");
-        Team someTeam = dbManager.getTeam("teamA");
-        Assert.assertEquals("ivanov", someUser.getLogin());
-        Assert.assertEquals("teamA", someTeam.getName());
-        dbManager.setTeamsForUser(someUser, someTeam);
+        dbManager.clearTable("teams");
+        dbManager.clearTable("users_teams");
+        dbManager.clearTable("users");
+        dbManager.insertUser(User.createUser("petrov"));
+        dbManager.insertTeam(Team.createTeam("teamB"));
 
+        User someUser = dbManager.getUser("petrov");
+        Team someTeam = dbManager.getTeam("teamB");
+        Assert.assertEquals("petrov", someUser.getLogin());
+        Assert.assertEquals("teamB", someTeam.getName());
+        dbManager.setTeamsForUser(someUser, someTeam);
+        for (User user : dbManager.findAllUsers()) {
+
+            for (Team team : dbManager.getUserTeams(user))
+                Assert.assertEquals("teamB", team.getName());
+
+        }
 
     }
+
     @Test
-    public void testUserTeams(){
+    public void testUserTeams() {
         DBManager dbManager = DBManager.getInstance();
 
         List<Team> teams = new ArrayList<>();
@@ -42,7 +54,6 @@ public class Part3StudentTest {
             }
         }
     }
-
 
 
 }

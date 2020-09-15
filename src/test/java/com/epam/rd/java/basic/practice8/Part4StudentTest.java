@@ -10,7 +10,7 @@ public class Part4StudentTest {
     @Test
     public void testDelete() {
         DBManager dbManager = DBManager.getInstance();
-        Team teamB = Team.createTeam("teamB");
+        Team teamB = Team.createTeam("boosterenko");
         dbManager.insertTeam(teamB);
         Assert.assertTrue(dbManager.deleteTeam(teamB));
 

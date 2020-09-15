@@ -9,10 +9,10 @@ public class Part5StudentTest {
     @Test
     public void testUpdate() {
         DBManager dbManager = DBManager.getInstance();
-        Team teamC = Team.createTeam("teamC");
+        Team teamC = Team.createTeam("teamClones");
         dbManager.insertTeam(teamC);
 
-        teamC.setName("teamX");
+        teamC.setName("Droids476");
         Assert.assertTrue(dbManager.updateTeam(teamC));
     }
 }

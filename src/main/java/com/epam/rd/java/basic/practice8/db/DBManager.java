@@ -13,8 +13,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.sql.Statement.RETURN_GENERATED_KEYS;
-
 public class DBManager {
     private static final Logger logger = Logger.getLogger(DBManager.class.getName());
     private static DBManager dbManager;
@@ -171,7 +169,7 @@ public class DBManager {
     public boolean insertUser(User user) {
         boolean flag = false;
         try (Connection connection = dbManager.getConnection(getUrlFromProperties());
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)", RETURN_GENERATED_KEYS);) {
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)", Statement.RETURN_GENERATED_KEYS);) {
 
             statement.setString(1, user.getLogin());
             statement.executeUpdate();
@@ -187,13 +185,14 @@ public class DBManager {
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         int id = 0;
-        try (Statement selectId  = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
+        try (Statement selectId = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
 
             resultSet = selectId.executeQuery("SELECT  max(id) FROM teams");
             if (resultSet.next()) {
                 id = resultSet.getInt(1) + 1;
             }
-            preparedStatement = dbManager.getConnection(getUrlFromProperties()).prepareStatement("INSERT INTO  teams (id, name) VALUES (?,?)");
+            team.setId(id);
+            preparedStatement = dbManager.getConnection(getUrlFromProperties()).prepareStatement("INSERT INTO  teams (id, name) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, id);
             preparedStatement.setString(2, team.getName());
             preparedStatement.executeUpdate();

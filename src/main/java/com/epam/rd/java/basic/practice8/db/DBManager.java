@@ -13,6 +13,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.sql.Statement.RETURN_GENERATED_KEYS;
+
 public class DBManager {
     private static final Logger logger = Logger.getLogger(DBManager.class.getName());
     private static DBManager dbManager;
@@ -48,7 +50,7 @@ public class DBManager {
             prop.load(input);
 
             // get the property value and print it out
-            out = prop.getProperty("connection.url");
+            out = prop.getProperty("myConnection.url");
 
         } catch (IOException ex) {
             logger.log(Level.WARNING, ex.getMessage());
@@ -59,15 +61,25 @@ public class DBManager {
     public User getUser(String login) {
         int id = 0;
         ResultSet resultSet = null;
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            resultSet = statement.executeQuery("SELECT * FROM users " +
-                    "WHERE login = '" + login + "'");
+        PreparedStatement preparedStatement = null;
+        try (Connection connection = dbManager.getConnection(getUrlFromProperties())) {
+            preparedStatement = connection.prepareStatement("SELECT * FROM users " +
+                    "WHERE login = ?");
+            preparedStatement.setString(1, login);
+            resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 id = resultSet.getInt(1);
             }
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
+            if (preparedStatement!=null){
+                try {
+                    preparedStatement.close();
+                } catch (SQLException throwables) {
+                    logger.log(Level.WARNING, throwables.getMessage());
+                }
+            }
             closeResultSet(resultSet);
         }
         return new User(id, login);
@@ -92,14 +104,24 @@ public class DBManager {
     public List<Team> getUserTeams(User user) {
         List<Team> teamList = new ArrayList<>();
         ResultSet selectIdTeams = null;
-        try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            selectIdTeams = statement.executeQuery("SELECT * FROM users_teams inner join teams on team_id = id where user_id = " + user.getId());
+        PreparedStatement preparedStatement = null;
+        try (Connection conn = dbManager.getConnection(getUrlFromProperties())) {
+            preparedStatement = conn.prepareStatement("SELECT * FROM users_teams inner join teams on team_id = id where user_id = ?");
+            preparedStatement.setInt(1, user.getId());
+            selectIdTeams = preparedStatement.executeQuery();
             while (selectIdTeams.next()) {
                 teamList.add(new Team(selectIdTeams.getInt("team_id"), selectIdTeams.getString("name")));
             }
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException throwables) {
+                    logger.log(Level.WARNING, throwables.getMessage());
+                }
+            }
             closeResultSet(selectIdTeams);
         }
         return teamList;
@@ -148,7 +170,7 @@ public class DBManager {
     public boolean insertUser(User user) {
         boolean flag = false;
         try (Connection connection = dbManager.getConnection(getUrlFromProperties());
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)");) {
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO users (login) VALUES (?)", RETURN_GENERATED_KEYS);) {
 
             statement.setString(1, user.getLogin());
             statement.executeUpdate();
@@ -162,7 +184,7 @@ public class DBManager {
     public boolean insertTeam(Team team) {
         boolean flag = false;
         try (Statement statement = dbManager.getConnection(getUrlFromProperties()).createStatement()) {
-            statement.executeUpdate("INSERT INTO  teams (name) VALUES ('" + team.getName() + "')");
+            statement.executeUpdate("INSERT INTO  teams (name) VALUES ('" + team.getName() + "')", RETURN_GENERATED_KEYS);
             flag = true;
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
@@ -210,7 +232,8 @@ public class DBManager {
         return userList;
     }
 
-    public void deleteTeam(Team team) {
+    public boolean deleteTeam(Team team) {
+        boolean flag = false;
         PreparedStatement statement = null;
         PreparedStatement statementForDeleteFromTeam = null;
         try (Connection conn = DriverManager.getConnection(getUrlFromProperties())) {
@@ -220,6 +243,7 @@ public class DBManager {
             statementForDeleteFromTeam = conn.prepareStatement("delete from teams where id= ?");
             statementForDeleteFromTeam.setInt(1, team.getId());
             statementForDeleteFromTeam.executeUpdate();
+            flag = true;
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
@@ -227,7 +251,7 @@ public class DBManager {
                 if (statementForDeleteFromTeam != null)
                     statementForDeleteFromTeam.close();
             } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                logger.log(Level.WARNING, throwables.getMessage());
             }
             try {
                 if (statement != null)
@@ -236,15 +260,18 @@ public class DBManager {
                 logger.log(Level.WARNING, throwables.getMessage());
             }
         }
+        return flag;
     }
 
-    public void updateTeam(Team team) {
+    public boolean updateTeam(Team team) {
+        boolean flag = false;
         PreparedStatement statement = null;
         try (Connection connection = DriverManager.getConnection(getUrlFromProperties())) {
             statement = connection.prepareStatement("update teams SET name= ? WHERE id = ?");
             statement.setString(1, team.getName());
             statement.setInt(2, team.getId());
             statement.executeUpdate();
+            flag = true;
         } catch (SQLException throwables) {
             logger.log(Level.WARNING, throwables.getMessage());
         } finally {
@@ -255,6 +282,7 @@ public class DBManager {
                 logger.log(Level.WARNING, throwables.getMessage());
             }
         }
+        return flag;
 
     }
 
